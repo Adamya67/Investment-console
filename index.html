@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Trading Command Center</title>
+  <style>
+    :root {
+      --bg: #0f1220;          /* dark navy */
+      --panel: #151a2e;       /* panel */
+      --panel-2: #1b2240;     /* panel accent */
+      --text: #e6e9f0;        /* primary text */
+      --muted: #a6b0cf;       /* secondary text */
+      --brand: #7aa2ff;       /* brand blue */
+      --brand-2: #8ef0d4;     /* brand teal */
+      --danger: #ff6b6b;
+      --ok: #22c55e;
+      --warn: #fbbf24;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+      --gap: 14px;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      background: radial-gradient(1200px 600px at 10% -10%, rgba(122,162,255,.20), transparent 50%),
+                  radial-gradient(1000px 700px at 110% -20%, rgba(142,240,212,.15), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+    }
+    a { color: inherit; text-decoration: none; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 22px; }
+    header {
+      display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center;
+      margin-bottom: 18px;
+    }
+    .title { font-size: 28px; font-weight: 800; letter-spacing: .3px; }
+    .subtitle { color: var(--muted); font-size: 14px; }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid #2a345e; color: var(--text);
+           padding: 10px 14px; border-radius: 12px; box-shadow: var(--shadow); cursor: pointer; transition: transform .08s ease, filter .2s ease; }
+    .btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
+    .btn:active { transform: translateY(0); filter: brightness(.98); }
+    .brand { background: linear-gradient(180deg, #3346a8, #263270); border-color: #3d4db3; }
+    .teal { background: linear-gradient(180deg, #1e7b6c, #135049); border-color: #1c6b5f; }
+
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--gap); }
+    .card { grid-column: span 12; background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+            border: 1px solid #273055; border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+    .card h2 { margin: 2px 0 10px; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+
+    @media(min-width: 800px){
+      .card.half { grid-column: span 6; }
+      .card.third { grid-column: span 4; }
+      .card.two { grid-column: span 8; }
+    }
+
+    .link-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--gap); }
+    .link {
+      background: linear-gradient(180deg, #1a2040, #141a33); border: 1px solid #2a345e; border-radius: 14px; padding: 14px;
+      display: grid; gap: 8px; position: relative; overflow: hidden; transition: transform .08s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .link:hover { transform: translateY(-2px); border-color: #4052a8; box-shadow: 0 10px 28px rgba(64,82,168,.25); }
+    .link .name { font-weight: 700; }
+    .link .desc { color: var(--muted); font-size: 13px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; background: rgba(122,162,255,.18); color: #cfe0ff; border: 1px solid rgba(122,162,255,.35);
+            font-size: 11px; padding: 4px 8px; border-radius: 999px; }
+
+    .toolbar { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; margin: 8px 0 14px; }
+    .search { width: 100%; background: #0e1430; border: 1px solid #2a345e; border-radius: 12px; padding: 11px 12px; color: var(--text);
+              outline: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.02); }
+
+    .kpi { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); margin: 4px 0 10px; }
+    .kpi .k { background: linear-gradient(180deg, #1a2040, #13192f); border: 1px solid #2a345e; border-radius: 14px; padding: 12px; }
+    .k .t { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .k .v { font-size: 22px; font-weight: 800; }
+
+    .notearea { width: 100%; height: 130px; background: #0e1430; border: 1px solid #2a345e; border-radius: 12px; padding: 12px; color: var(--text); resize: vertical; }
+    .mini { font-size: 12px; color: var(--muted); }
+
+    .row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .row .btn { padding: 9px 12px; border-radius: 999px; }
+
+    .footer { color: var(--muted); font-size: 12px; text-align: center; margin: 22px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <div class="title">Trading Command Center</div>
+        <div class="subtitle">One‑click hub for news, scanners, calendars, sentiment & your notes. (All links open in a new tab.)</div>
+      </div>
+      <div class="controls">
+        <button class="btn brand" id="darkToggle">Toggle Theme</button>
+        <button class="btn" id="saveState">Save Notes</button>
+        <button class="btn" id="clearState">Clear Notes</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Quick KPIs / Shortcuts -->
+      <section class="card two">
+        <h2>Quick Shortcuts</h2>
+        <div class="row">
+          <a class="btn" target="_blank" href="https://pro.benzinga.com/">Benzinga Pro</a>
+          <a class="btn" target="_blank" href="https://www.barchart.com/stocks/most-active">Barchart Most Active</a>
+          <a class="btn" target="_blank" href="https://finviz.com/screener.ashx?v=111&f=sh_avgvol_o500,sh_price_o5,ta_perf_d1o,geo_usa">Premarket Movers</a>
+          <a class="btn" target="_blank" href="https://finance.yahoo.com/calendar/earnings/">Earnings Calendar</a>
+          <a class="btn" target="_blank" href="https://www.investing.com/economic-calendar/">Economic Calendar</a>
+          <a class="btn" target="_blank" href="https://www.tradingview.com/">TradingView</a>
+          <a class="btn" target="_blank" href="https://stocktwits.com/">StockTwits</a>
+          <a class="btn" target="_blank" href="https://app.unusualwhales.com/">Unusual Whales</a>
+        </div>
+      </section>
+
+      <!-- Searchable Links -->
+      <section class="card two">
+        <h2>All Links</h2>
+        <div class="toolbar">
+          <input id="search" class="search" placeholder="Search tools… e.g., earnings, biotech, AI, defense, options flow" />
+          <button class="btn" id="expandAll">Expand All</button>
+          <button class="btn" id="collapseAll">Collapse All</button>
+        </div>
+
+        <div id="sections"></div>
+      </section>
+
+      <!-- Notes / Journal -->
+      <section class="card half">
+        <h2>Daily Plan</h2>
+        <textarea id="notes" class="notearea" placeholder="List today’s targets, entries, stops, and catalysts…"></textarea>
+        <div class="mini">Tip: Hit <strong>Save Notes</strong> in the header to persist this across sessions (local only).</div>
+      </section>
+
+      <section class="card half">
+        <h2>End‑of‑Day Review</h2>
+        <textarea id="eod" class="notearea" placeholder="What worked? What didn’t? Lessons for tomorrow…"></textarea>
+      </section>
+
+      <!-- Custom links manager -->
+      <section class="card">
+        <h2>Custom Links</h2>
+        <div class="row" style="margin-bottom:10px">
+          <input id="customName" class="search" style="max-width:260px" placeholder="Name (e.g., My Trade Log)" />
+          <input id="customUrl" class="search" style="max-width:520px" placeholder="URL (https://…)" />
+          <button class="btn teal" id="addCustom">Add Link</button>
+        </div>
+        <div id="customLinks" class="link-grid"></div>
+      </section>
+
+      <div class="footer">Built for fast, focused trading. All links are third‑party resources and open in a new tab.</div>
+    </div>
+  </div>
+
+  <script>
+    // ---- Data model: sections & links ----
+    const data = [
+      {
+        title: "Real‑Time News",
+        tag: "news",
+        links: [
+          {name: "Benzinga Pro (Movers)", url: "https://pro.benzinga.com/", desc: "Fast, verified headlines and live movers feed.", badge: "Speed"},
+          {name: "Seeking Alpha – Breaking News", url: "https://seekingalpha.com/market-news", desc: "Rapid company & sector headlines.", badge: "Breaking"},
+          {name: "Barchart – Top Gainers/Active", url: "https://www.barchart.com/stocks/most-active", desc: "Spot volume spikes and momentum.", badge: "Momentum"},
+          {name: "MarketWatch – Latest", url: "https://www.marketwatch.com/latest-news", desc: "General market headlines & summaries.", badge: "Macro"}
+        ]
+      },
+      {
+        title: "Momentum Scanners",
+        tag: "scanners momentum",
+        links: [
+          {name: "Finviz – Premarket Movers", url: "https://finviz.com/screener.ashx?v=111&f=sh_avgvol_o500,sh_price_o5,ta_perf_d1o,geo_usa", desc: "US premarket leaders.", badge: "Scan"},
+          {name: "Finviz – High Relative Volume", url: "https://finviz.com/screener.ashx?v=111&f=sh_avgvol_o500,sh_price_o5,ta_relvol_o2", desc: ">2× average volume.", badge: "RelVol"},
+          {name: "Finviz – EPS Growth + Momentum", url: "https://finviz.com/screener.ashx?v=111&f=cap_smallover,fa_epsyoy_o10,sh_price_o5,sh_avgvol_o500,ta_perf_wo10", desc: "Strong fundamentals + recent strength.", badge: "EPS"},
+          {name: "TradingView – Launch", url: "https://www.tradingview.com/", desc: "Charts & price alerts.", badge: "Charts"}
+        ]
+      },
+      {
+        title: "Calendars",
+        tag: "calendar macro earnings economic",
+        links: [
+          {name: "Yahoo – Earnings Calendar", url: "https://finance.yahoo.com/calendar/earnings/", desc: "Find daily earnings catalysts.", badge: "Earnings"},
+          {name: "Investing.com – Economic Calendar", url: "https://www.investing.com/economic-calendar/", desc: "CPI, jobs, Fed events.", badge: "Macro"}
+        ]
+      },
+      {
+        title: "Analysis & Fundamentals",
+        tag: "analysis fundamentals research",
+        links: [
+          {name: "Koyfin Dashboard", url: "https://app.koyfin.com/", desc: "Institutional-grade visual analytics.", badge: "Pro"},
+          {name: "Yahoo Finance", url: "https://finance.yahoo.com/", desc: "Quick financials, news & charts.", badge: "Basics"},
+          {name: "TipRanks – Analyst Ratings", url: "https://www.tipranks.com/", desc: "Upgrades, downgrades & targets.", badge: "Analysts"}
+        ]
+      },
+      {
+        title: "Sentiment & Options Flow",
+        tag: "sentiment options flow retail",
+        links: [
+          {name: "Unusual Whales", url: "https://app.unusualwhales.com/", desc: "Live options flow to spot big bets.", badge: "Flow"},
+          {name: "StockTwits", url: "https://stocktwits.com/", desc: "Retail sentiment & trending tickers.", badge: "Sentiment"},
+          {name: "X (Twitter) – FinTwit", url: "https://twitter.com/search?q=%23stocks%20%23earnings%20%23breakout&src=typed_query&f=live", desc: "Live trader chatter; filter by hashtags.", badge: "Social"}
+        ]
+      },
+      {
+        title: "Sector Hubs",
+        tag: "sectors ai biotech defense energy semis",
+        links: [
+          {name: "TechCrunch (Tech/AI)", url: "https://techcrunch.com/", desc: "Product & partnership headlines.", badge: "Tech"},
+          {name: "SemiAnalysis (Semis)", url: "https://www.semianalysis.com/", desc: "Deep-dive semi research.", badge: "Semis"},
+          {name: "BioPharma Dive (Biotech)", url: "https://www.biopharmadive.com/", desc: "FDA & trial news.", badge: "Biotech"},
+          {name: "Defense News", url: "https://www.defensenews.com/", desc: "Contracts & geopolitics.", badge: "Defense"},
+          {name: "OilPrice.com (Energy)", url: "https://oilprice.com/", desc: "Commodity drivers & OPEC.", badge: "Energy"}
+        ]
+      }
+    ];
+
+    // ---- Build expandable sections with buttons ----
+    const sectionsEl = document.getElementById('sections');
+
+    function makeSection(section){
+      const wrap = document.createElement('div');
+      wrap.className = 'link-section';
+      wrap.dataset.tags = section.tag.toLowerCase();
+
+      const head = document.createElement('div');
+      head.className = 'link header';
+      head.style.display = 'flex';
+      head.style.alignItems = 'center';
+      head.style.justifyContent = 'space-between';
+      head.style.cursor = 'pointer';
+      head.innerHTML = `<div style="display:flex;align-items:center;gap:10px"><span class="pill">${section.title}</span><span class="mini">${section.links.length} links</span></div><div class="mini">click to toggle</div>`;
+
+      const grid = document.createElement('div');
+      grid.className = 'link-grid';
+      grid.style.marginTop = '10px';
+      grid.style.display = 'none';
+
+      section.links.forEach(l => {
+        const a = document.createElement('a');
+        a.className = 'link';
+        a.href = l.url; a.target = '_blank';
+        a.innerHTML = `<div class="name">${l.name}</div><div class="desc">${l.desc}</div><div class="pill">${l.badge}</div>`;
+        grid.appendChild(a);
+      });
+
+      head.addEventListener('click', ()=>{
+        grid.style.display = grid.style.display === 'none' ? 'grid' : 'none';
+      });
+
+      wrap.appendChild(head);
+      wrap.appendChild(grid);
+      return wrap;
+    }
+
+    function build(){
+      sectionsEl.innerHTML = '';
+      data.forEach(s => sectionsEl.appendChild(makeSection(s)));
+    }
+
+    build();
+
+    // ---- Search filter ----
+    const search = document.getElementById('search');
+    search.addEventListener('input', (e)=>{
+      const q = e.target.value.toLowerCase().trim();
+      const groups = [...sectionsEl.querySelectorAll('.link-section')];
+      groups.forEach(g => {
+        const matchesTag = g.dataset.tags.includes(q);
+        // show all sections; filter inside cards
+        const cards = g.querySelectorAll('.link');
+        let any = false;
+        cards.forEach((c,i) => {
+          if(i===0){ /* header */ return; }
+          const txt = c.innerText.toLowerCase();
+          const hit = q==='' || txt.includes(q) || matchesTag;
+          c.style.display = hit ? '' : 'none';
+          if(hit) any = true;
+        });
+        // auto open when searching
+        const grid = g.querySelector('.link-grid');
+        grid.style.display = (q && any) ? 'grid' : (q ? 'none' : 'none');
+      });
+    });
+
+    // Expand/collapse all
+    document.getElementById('expandAll').onclick = () => {
+      document.querySelectorAll('.link-grid').forEach(g => g.style.display = 'grid');
+    }
+    document.getElementById('collapseAll').onclick = () => {
+      document.querySelectorAll('.link-grid').forEach(g => g.style.display = 'none');
+    }
+
+    // ---- Notes persistence ----
+    const notes = document.getElementById('notes');
+    const eod = document.getElementById('eod');
+    const saveBtn = document.getElementById('saveState');
+    const clearBtn = document.getElementById('clearState');
+
+    function loadState(){
+      notes.value = localStorage.getItem('tcc_notes') || '';
+      eod.value = localStorage.getItem('tcc_eod') || '';
+      const custom = JSON.parse(localStorage.getItem('tcc_custom') || '[]');
+      renderCustom(custom);
+      const theme = localStorage.getItem('tcc_theme') || 'dark';
+      if(theme==='light') document.body.classList.add('light');
+    }
+
+    function saveState(){
+      localStorage.setItem('tcc_notes', notes.value);
+      localStorage.setItem('tcc_eod', eod.value);
+    }
+
+    saveBtn.onclick = saveState;
+    clearBtn.onclick = () => {
+      notes.value=''; eod.value=''; saveState();
+    };
+
+    // ---- Custom links ----
+    const addBtn = document.getElementById('addCustom');
+    const customName = document.getElementById('customName');
+    const customUrl = document.getElementById('customUrl');
+    const customLinks = document.getElementById('customLinks');
+
+    function renderCustom(items){
+      customLinks.innerHTML = '';
+      items.forEach((l,idx)=>{
+        const card = document.createElement('a');
+        card.className = 'link';
+        card.target = '_blank';
+        card.href = l.url;
+        card.innerHTML = `<div class="name">${l.name}</div><div class="desc">${l.url}</div><div class="pill">Custom</div>`;
+        // delete button
+        const del = document.createElement('button');
+        del.textContent = '×';
+        del.title = 'Remove';
+        del.style.position='absolute'; del.style.top='8px'; del.style.right='10px';
+        del.style.background='transparent'; del.style.border='0'; del.style.color='#9fb0ff'; del.style.fontSize='18px'; del.style.cursor='pointer';
+        del.onclick = (e)=>{ e.preventDefault(); const arr = JSON.parse(localStorage.getItem('tcc_custom')||'[]'); arr.splice(idx,1); localStorage.setItem('tcc_custom', JSON.stringify(arr)); renderCustom(arr); };
+        card.appendChild(del);
+        customLinks.appendChild(card);
+      });
+    }
+
+    addBtn.onclick = ()=>{
+      const name = customName.value.trim();
+      const url = customUrl.value.trim();
+      if(!name || !url || !/^https?:\/\//i.test(url)) { alert('Enter a name and a valid URL (https://…)'); return; }
+      const arr = JSON.parse(localStorage.getItem('tcc_custom')||'[]');
+      arr.push({name, url});
+      localStorage.setItem('tcc_custom', JSON.stringify(arr));
+      customName.value=''; customUrl.value='';
+      renderCustom(arr);
+    };
+
+    // ---- Theme toggle ----
+    const toggle = document.getElementById('darkToggle');
+    toggle.onclick = ()=>{
+      document.body.classList.toggle('light');
+      localStorage.setItem('tcc_theme', document.body.classList.contains('light') ? 'light' : 'dark');
+    };
+
+    // Light theme overrides
+    const style = document.createElement('style');
+    style.textContent = `
+      body.light { background: #f6f7fb; color: #0c1222; }
+      body.light .subtitle, body.light .mini { color: #4b5567; }
+      body.light .card { background: white; border-color: #e5e7f3; box-shadow: 0 10px 26px rgba(11,17,42,.08); }
+      body.light .btn { background: linear-gradient(180deg, #ffffff, #f0f3ff); border-color: #d5dbf6; color: #0c1222; }
+      body.light .brand { background: linear-gradient(180deg, #4c68ff, #3143a6); color: white; border-color: #4254c3; }
+      body.light .teal { background: linear-gradient(180deg, #1fb39c, #118275); color: white; border-color: #0b7c6d; }
+      body.light .search, body.light .notearea { background: #ffffff; color: #0c1222; border-color: #d5dbf6; }
+      body.light .link { background: linear-gradient(180deg, #ffffff, #f5f7ff); border-color: #d8def7; }
+      body.light .link:hover { border-color: #94a3ff; box-shadow: 0 10px 28px rgba(69,86,207,.15); }
+      body.light .pill { background: rgba(76,104,255,.12); color: #2a3bb0; border-color: rgba(76,104,255,.28); }
+    `;
+    document.head.appendChild(style);
+
+    // Initialize
+    loadState();
+  </script>
+</body>
+</html>
